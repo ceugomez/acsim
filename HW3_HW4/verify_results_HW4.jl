@@ -6,9 +6,9 @@ aircraft_parameters = AircraftParameters(filename)
 #Part 1 - Verifying HW2
 initial_state = [100, 200, 1000, 0.05, −0.02, 2.0, 15, −2, 3, .01, .02, .03]
 s = AircraftState(initial_state...)
-control_inputs =  [−.4, .01, .02, .3]
-c = AircraftControl(control_inputs...)
-wind_inertial = wind_inertial = [−1, −2, −3]
+control_input =  [−.4, .01, .02, .3]
+c = AircraftControl(control_input...)
+wind_inertial = [−1, −2, −3]
 rho = 1.1
 
 af, am = AeroForcesAndMomentsBodyStateWindCoeffs(s,c, wind_inertial, rho, aircraft_parameters)

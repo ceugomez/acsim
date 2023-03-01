@@ -1,8 +1,9 @@
-include("P1_P2.jl")
+include("P1.jl")
+include("P2.jl")
 
 filename = "ttwistor.mat"
 aircraft_parameters = AircraftParameters(filename)
-case_num = 2
+case_num = 3
 save_plots=true
 
 #Part 1

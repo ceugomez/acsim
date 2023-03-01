@@ -6,7 +6,12 @@ include("aircraft_eom.jl")
 using LinearAlgebra
 using Optim
 
-function GetStateAndControl(trim_definition::TrimDefinition,trim_variables::TrimVariablesCT)
+#=
+*******************************************************************************************************
+Functions for Part 2
+=#
+
+function GetStateAndControl(trim_definition::TrimDefinitionCT,trim_variables::TrimVariablesCT)
 
     #Parameters that don't matter
     x = y = ψ = 0.0
@@ -16,10 +21,9 @@ function GetStateAndControl(trim_definition::TrimDefinition,trim_variables::Trim
     z = -trim_definition.h
     #=
     Since there is no wind, γ = γ_a.
-    Also, this is constant altitude flight. So, flight path angle, γ=0.
-    Thus, pitch θ = angle of attack α
+    Thus, pitch θ = flight path angle γ + angle of attack α
     =#
-    θ = trim_variables.α
+    θ = trim_definition.γ + trim_variables.α
     α = trim_variables.α
     β = trim_variables.β
     wind_angles = WindAngles(trim_definition.Va,β,α)
@@ -32,7 +36,10 @@ function GetStateAndControl(trim_definition::TrimDefinition,trim_variables::Trim
     χ_dot = (velocity_perpendicular_to_the_cirle)/R
     velocity_perpendicular_to_the_cirle = Va*cos(γ), where γ is the flight path angle.
     =#
-    χ_dot = ( trim_definition.Va*cos(trim_definition.γ) )/ trim_definition.R
+
+    # R = (trim_definition.Va^2)/(9.81*tan(ϕ))
+    R = trim_definition.R
+    χ_dot = ( trim_definition.Va*cos(trim_definition.γ) )/ R
     p = -sin(θ)*χ_dot
     q = sin(ϕ)*cos(θ)*χ_dot
     r = cos(ϕ)*cos(θ)*χ_dot
@@ -47,14 +54,11 @@ function GetStateAndControl(trim_definition::TrimDefinition,trim_variables::Trim
     return state,control
 end
 
-
-function GetCost(trim_definition::TrimDefinition,trim_variables::TrimVariablesCT,aircraft_parameters::AircraftParameters)
-
+function GetCost(trim_definition::TrimDefinitionCT,trim_variables::TrimVariablesCT,aircraft_parameters::AircraftParameters)
     state,control = GetStateAndControl(trim_definition,trim_variables)
     wind_inertial = [0.0,0.0,0.0]
     rho = stdatmo(-state.z)
     tangent_speed = trim_definition.Va*cos(trim_definition.γ)
-    # current_R = (trim_definition.Va^2)/(aircraft_parameters.g*tan(state.roll))
     centripetal_acceleration = (tangent_speed*tangent_speed)/trim_definition.R
     a_desired_inertial_frame = [0.0, centripetal_acceleration, 0.0]
     euler_angles = EulerAngles(state.roll, state.pitch, state.yaw)
@@ -64,13 +68,16 @@ function GetCost(trim_definition::TrimDefinition,trim_variables::TrimVariablesCT
     total_force, total_moment = AircraftForcesAndMoments(state, control, wind_inertial, rho, aircraft_parameters)
     force = total_force - desired_force
     cost = norm(force,2)^2 + norm(total_moment,2)^2 + aero_force[2]^2
-
     return cost
 end
 
+function OptimizerCostFunction(params::Vector{Float64},trim_definition::TrimDefinitionCT,aircraft_parameters::AircraftParameters)
+    trim_variables = TrimVariablesCT(params...)
+    cost = GetCost(trim_definition,trim_variables,aircraft_parameters)
+    return cost
+end
 
-
-function GetTrimConditionsCT(trim_definition::TrimDefinition,aircraft_parameters::AircraftParameters)
+function GetTrimConditions(trim_definition::TrimDefinitionCT,aircraft_parameters::AircraftParameters)
     lower = [-pi/4,-pi/4,0.0,-pi/4,-pi/4,-pi/4,-pi/4]
     upper = [pi/4,pi/4,1.0,pi/4,pi/4,pi/4,pi/4]
     initial_tv = [0.5,0.5,0.5,0.5,0.5,0.5,0.5]
