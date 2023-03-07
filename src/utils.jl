@@ -165,41 +165,6 @@ function GetCoefficients(aircraft_state::AircraftState, aircraft_surfaces::Aircr
     return CoefficientsDict
 end
 
-function GetLateralEOMCoefficients(Γ::Array{Float64},ap::AircraftParameters)
-    #For roll rate p
-    Cp0 = Γ[3]*ap.Cl0 + Γ[4]*ap.Cn0
-    Cpβ = Γ[3]*ap.Clbeta + Γ[4]*ap.Cnbeta
-    Cpp = Γ[3]*ap.Clp + Γ[4]*ap.Cnp
-    Cpr = Γ[3]*ap.Clr + Γ[4]*ap.Cnr
-    Cpδa = Γ[3]*ap.Clda + Γ[4]*ap.Cnda
-    Cpδr = Γ[3]*ap.Cldr + Γ[4]*ap.Cndr
-
-    #For yaw rate r
-    Cr0 = Γ[4]*ap.Cl0 + Γ[8]*ap.Cn0
-    Crβ = Γ[4]*ap.Clbeta + Γ[8]*ap.Cnbeta
-    Crp = Γ[4]*ap.Clp + Γ[8]*ap.Cnp
-    Crr = Γ[4]*ap.Clr + Γ[8]*ap.Cnr
-    Crδa = Γ[4]*ap.Clda + Γ[8]*ap.Cnda
-    Crδr = Γ[4]*ap.Cldr + Γ[8]*ap.Cndr
-
-    CoefficientsDict = Dict(
-                            "Cp0" => Cp0,
-                            "Cpβ" => Cpβ,
-                            "Cpp" => Cpp,
-                            "Cpr" => Cpr,
-                            "Cpδa" => Cpδa,
-                            "Cpδr" => Cpδr,
-                            "Cr0" => Cr0,
-                            "Crβ" => Crβ,
-                            "Crp" => Crp,
-                            "Crr" => Crr,
-                            "Crδa" => Crδa,
-                            "Crδr" => Crδr
-                        )
-
-    return CoefficientsDict
-end
-
 function wrap_between_negative_pi_to_pi(theta)
     if(theta>pi)
         return theta-2*pi
@@ -210,4 +175,15 @@ end
 
 function wrap_between_0_and_2Pi(theta)
    return mod(theta,2*pi)
+end
+
+function get_damping_ratio(eigenvalue)
+    ω = get_natural_frequency(eigenvalue)
+    ζ = eigenvalue.re/ω     #This variable is called "zeta"
+    return abs(ζ)
+end
+
+function get_natural_frequency(eigenvalue)
+    ω = sqrt(eigenvalue.re^2 + eigenvalue.im^2)
+    return ω
 end
