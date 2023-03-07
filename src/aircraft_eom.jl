@@ -6,14 +6,14 @@ using Plots
 
 function AeroForcesAndMomentsBodyStateWindCoeffs(aircraft_state::AircraftState, aircraft_surfaces::AircraftControl, wind_inertial, density, aircraft_parameters::AircraftParameters)
 
-    rho = density #stdatmo(-aircraft_state.z)
+    ρ = density #stdatmo(-aircraft_state.z)
     euler_angles = EulerAngles(aircraft_state.ϕ, aircraft_state.θ, aircraft_state.ψ)
     aircraft_velocity = [aircraft_state.u,aircraft_state.v,aircraft_state.w]   #In body frame
     wind_body_frame = TransformFromInertialToBody(wind_inertial, euler_angles)
     air_relative_speed = aircraft_velocity - wind_body_frame   #Va vector in body frame
     wind_angles = AirRelativeVelocityVectorToWindAngles(air_relative_speed)
     Va = wind_angles.Va
-    Q = 0.5*rho*Va*Va
+    Q = 0.5*ρ*Va*Va
     S = aircraft_parameters.S
     b = aircraft_parameters.b
     c = aircraft_parameters.c
@@ -77,12 +77,12 @@ function AircraftForcesAndMoments(aircraft_state::AircraftState, aircraft_surfac
     return total_force, total_moment
 end
 
-function AircraftEOM(aircraft_state,aircraft_surfaces,wind_inertial,aircraft_parameters)
+function AircraftEOM(t::Float64,aircraft_state::AircraftState,aircraft_surfaces::AircraftControl,wind_inertial::Array{Float64,1},aircraft_parameters::AircraftParameters)
 
-    rho = stdatmo(-aircraft_state.z)
+    ρ = stdatmo(-aircraft_state.z)
     m = aircraft_parameters.m
     euler_angles = EulerAngles(aircraft_state.ϕ, aircraft_state.θ, aircraft_state.ψ)
-    total_force, total_moment = AircraftForcesAndMoments(aircraft_state,aircraft_surfaces,wind_inertial,rho,aircraft_parameters)
+    total_force, total_moment = AircraftForcesAndMoments(aircraft_state,aircraft_surfaces,wind_inertial,ρ,aircraft_parameters)
 
     #Position derivatives
     velocity_vector = [aircraft_state.u, aircraft_state.v, aircraft_state.w]
@@ -121,22 +121,32 @@ function aircraft_dynamics!(du,u,p,t)
     control_inputs = AircraftControl(p[1]...)
     wind_inertial = p[2]
     aircraft_parameters = p[3]
-    x_dot = AircraftEOM(aircraft_state,control_inputs,wind_inertial,aircraft_parameters)
+    x_dot = AircraftEOM(t,aircraft_state,control_inputs,wind_inertial,aircraft_parameters)
     for i in 1:length(u)
         du[i] = x_dot[i]
     end
 end
 
-function simulate(initial_state, time_interval, controls, wind_inertial, aircraft_parameters, save_at_value=1.0)
-    extra_parameters = [controls, wind_inertial, aircraft_parameters]
-    prob = ODEProblem(aircraft_dynamics!,initial_state,time_interval,extra_parameters)
+function simulate(dynamics::Function, initial_state::Array{Float64,1}, time_interval::Array{Float64,1}, extra_parameters, save_at_value=1.0)
+    prob = ODEProblem(dynamics,initial_state,time_interval,extra_parameters)
     sol = DifferentialEquations.solve(prob,saveat=save_at_value)
-    aircraft_states = []
+    aircraft_states = AircraftState[]
     for i in 1:length(sol.u)
         push!(aircraft_states,AircraftState(sol.u[i]...))
     end
     return aircraft_states
 end
+
+# function simulate(initial_state, time_interval, controls, wind_inertial, aircraft_parameters, save_at_value=1.0)
+#     extra_parameters = [controls, wind_inertial, aircraft_parameters]
+#     prob = ODEProblem(aircraft_dynamics!,initial_state,time_interval,extra_parameters)
+#     sol = DifferentialEquations.solve(prob,saveat=save_at_value)
+#     aircraft_states = []
+#     for i in 1:length(sol.u)
+#         push!(aircraft_states,AircraftState(sol.u[i]...))
+#     end
+#     return aircraft_states
+# end
 
 function PlotSimulation(time, aircraft_state_array, control_input_array, location, save_plots=false)
 
