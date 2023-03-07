@@ -4,8 +4,8 @@ include("P2.jl")
 filename = "ttwistor.mat"
 aircraft_parameters = AircraftParameters(filename)
 location = "/HW3_HW4/plots"
-save_plots=true
-case_num = 1
+save_plots = true
+case_num = 3
 
 
 #Part 1
@@ -58,8 +58,9 @@ if(case_num == 5)
     wind_inertial = [0.0,0.0,0.0]
 end
 
-time_interval = (0,500)
+time_interval = [0.0,500.0]
 time_values = [i for i in 0:time_interval[2]]
-trajectory_states = simulate(initial_state, time_interval, control_input, wind_inertial, aircraft_parameters)
+extra_params = [control_input, wind_inertial, aircraft_parameters]
+trajectory_states = simulate(aircraft_dynamics!, initial_state, time_interval, extra_params)
 control_array = [AircraftControl(control_input...) for i in 1:length(trajectory_states)]
 PlotSimulation(time_values, trajectory_states, control_array , location, save_plots)
