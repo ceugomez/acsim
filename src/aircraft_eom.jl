@@ -85,7 +85,7 @@ function AircraftEOM(t::Float64,aircraft_state::AircraftState,aircraft_surfaces:
     total_force, total_moment = AircraftForcesAndMoments(aircraft_state,aircraft_surfaces,wind_inertial,ρ,aircraft_parameters)
 
     #Position derivatives
-    velocity_vector = [aircraft_state.u, aircraft_state.v, aircraft_state.w]
+    velocity_vector = SVector{3,Float64}(aircraft_state.u, aircraft_state.v, aircraft_state.w)
     position_dot = TransformFromBodyToInertial(velocity_vector, euler_angles)
 
     #Euler Angle derivatives
@@ -152,27 +152,27 @@ function PlotSimulation(time, aircraft_state_array, control_input_array, locatio
 
     statefields = fieldnames(AircraftState)
     controlfields = fieldnames(AircraftControl)
-    plots_location = pwd()*location
+    plots_location = joinpath(pwd(),location)
 
     #Extract State values
-    x_pos_values = [getfield(state,:x) for state in aircraft_state_array]
-    y_pos_values = [getfield(state,:y) for state in aircraft_state_array]
-    z_pos_values = [getfield(state,:z) for state in aircraft_state_array]
-    roll_values = [getfield(state,:ϕ) for state in aircraft_state_array]
-    pitch_values = [getfield(state,:θ) for state in aircraft_state_array]
-    yaw_values = [getfield(state,:ψ) for state in aircraft_state_array]
-    u_values = [getfield(state,:u) for state in aircraft_state_array]
-    v_values = [getfield(state,:v) for state in aircraft_state_array]
-    w_values = [getfield(state,:w) for state in aircraft_state_array]
-    p_values = [getfield(state,:p) for state in aircraft_state_array]
-    q_values = [getfield(state,:q) for state in aircraft_state_array]
-    r_values = [getfield(state,:r) for state in aircraft_state_array]
+    x_pos_values = [state.x for state in aircraft_state_array]
+    y_pos_values = [state.y for state in aircraft_state_array]
+    z_pos_values = [state.z for state in aircraft_state_array]
+    roll_values = [state.ϕ for state in aircraft_state_array]
+    pitch_values = [state.θ for state in aircraft_state_array]
+    yaw_values = [state.ψ for state in aircraft_state_array]
+    u_values = [state.u for state in aircraft_state_array]
+    v_values = [state.v for state in aircraft_state_array]
+    w_values = [state.w for state in aircraft_state_array]
+    p_values = [state.p for state in aircraft_state_array]
+    q_values = [state.q for state in aircraft_state_array]
+    r_values = [state.r for state in aircraft_state_array]
 
     #Extract Control values
-    da_values = [getfield(control,:δa) for control in control_input_array]
-    de_values = [getfield(control,:δe) for control in control_input_array]
-    dr_values = [getfield(control,:δr) for control in control_input_array]
-    dt_values = [getfield(control,:δt) for control in control_input_array]
+    da_values = [control.δa for control in control_input_array]
+    de_values = [control.δe for control in control_input_array]
+    dr_values = [control.δr for control in control_input_array]
+    dt_values = [control.δt for control in control_input_array]
 
     #Position plots
     px = plot( time, x_pos_values, xlabel = "Time (in s)", ylabel="x (in m)"  )

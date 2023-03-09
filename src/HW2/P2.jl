@@ -35,7 +35,7 @@ end
 
 filename = "ttwistor.mat"
 aircraft_parameters = AircraftParameters(filename)
-location = "/HW2/plots"
+location = "HW2/plots"
 save_plots = true
 case_num = 2
 

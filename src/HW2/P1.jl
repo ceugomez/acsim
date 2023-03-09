@@ -119,8 +119,7 @@ function PlotSimulation(time, aircraft_state_array, control_input_array, locatio
 
     statefields = fieldnames(AircraftState)
     controlfields = fieldnames(AircraftControl)
-    plots_location = pwd()*location
-    println(plots_location)
+    plots_location = joinpath(pwd(),location)
 
     #Extract State values
     x_pos_values = [getfield(state,:x) for state in aircraft_state_array]

@@ -49,9 +49,9 @@ end
 
 filename = "ttwistor.mat"
 aircraft_parameters = AircraftParameters(filename)
-location = "/HW5/plots"
+location = "HW5/plots"
 save_plots = true
-case_num = 3
+case_num = 1
 
 
 trim_definition = TrimDefinitionSL(18.0,0.0,1800.0)

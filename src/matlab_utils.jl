@@ -1,8 +1,7 @@
 using MAT
 
 function AircraftParameters(filename)
-    println(pwd())
-    file_location = pwd()*"/"*filename
+    file_location = joinpath(pwd(),filename)
     matlab_data = matread(file_location)
     matlab_params = matlab_data["aircraft_parameters"]
     julia_params = [ matlab_params[string(k)] for k in fieldnames(AircraftParameters)]

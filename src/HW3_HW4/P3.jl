@@ -3,7 +3,7 @@ include("P2.jl")
 
 filename = "ttwistor.mat"
 aircraft_parameters = AircraftParameters(filename)
-location = "/HW3_HW4/plots"
+location = "HW3_HW4/plots"
 save_plots = true
 case_num = 3
 
