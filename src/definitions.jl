@@ -140,3 +140,48 @@ struct AircraftParameters
     Cldr
     Cndr
 end
+
+Base.@kwdef mutable struct ControlGains
+    g = typemax(Float64)
+    max_roll = typemax(Float64)
+    max_roll_rate = typemax(Float64)
+    max_pitch = typemax(Float64)
+    max_da = typemax(Float64)
+    max_dr = typemax(Float64)
+    max_de = typemax(Float64)
+    Kp_roll = typemax(Float64)
+    Kd_roll = typemax(Float64)
+    Ki_roll = typemax(Float64)
+    Kp_course = typemax(Float64)
+    Ki_course = typemax(Float64)
+    Kp_beta = typemax(Float64)
+    Ki_beta = typemax(Float64)
+    Kd_beta = typemax(Float64)
+    Kp_pitch = typemax(Float64)
+    Kd_pitch = typemax(Float64)
+    Kp_height = typemax(Float64)
+    Ki_height = typemax(Float64)
+    Kpitch_DC = typemax(Float64)
+    takeoff_height = typemax(Float64)
+    takeoff_pitch = typemax(Float64)
+    height_hold_limit = typemax(Float64)
+    climb_throttle = typemax(Float64)
+    Kp_speed_pitch = typemax(Float64)
+    Ki_speed_pitch = typemax(Float64)
+    Kp_speed_throttle = typemax(Float64)
+    Ki_speed_throttle = typemax(Float64)
+    u_trim = typemax(Float64)
+    Ts = typemax(Float64)
+end
+
+Base.@kwdef mutable struct LinearTerms
+    a_phi1 = typemax(Float64)
+    a_phi2 = typemax(Float64)
+    a_beta1 = typemax(Float64)
+    a_bet2 = typemax(Float64)
+    a_theta1 = typemax(Float64)
+    a_theta2 = typemax(Float64)
+    a_theta3 = typemax(Float64)
+    a_v1 = typemax(Float64)
+    a_v2 = typemax(Float64)
+end
