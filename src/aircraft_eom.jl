@@ -117,6 +117,11 @@ function AircraftEOM(t::Float64,aircraft_state::AircraftState,aircraft_surfaces:
 end
 
 function aircraft_dynamics!(du,u,p,t)
+
+    # ϕ = wrap_between_negative_pi_to_pi(u[3])
+    # θ = wrap_between_negative_pi_to_pi(u[4])
+    # ψ = wrap_between_negative_pi_to_pi(u[5])
+    # aircraft_state = AircraftState(vcat(u[1:3],[ϕ,θ,ψ],u[7:12]))
     aircraft_state = AircraftState(u...)
     control_inputs = AircraftControl(p[1]...)
     wind_inertial = p[2]

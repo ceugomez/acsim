@@ -169,5 +169,4 @@ function CalculateControlGainsSimpleSLC_Nondim_Ttwistor(aircraft_parameters, tri
     linear_terms.a_v2  = a_v2;
 
     return control_gains, linear_terms
-
 end

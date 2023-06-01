@@ -19,6 +19,7 @@ include("../matlab_utils.jl")
 include("../aircraft_eom.jl")
 include("../trim.jl")
 include("controls_functions.jl")
+include("P1.jl")
 include("P2.jl")
 
 
