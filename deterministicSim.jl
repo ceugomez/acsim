@@ -16,7 +16,7 @@
     initial_state = collect(values(state))
     control_input = collect(values(control))
 # winds 
-    wind_inertial = [0.0,0.0,0.0] # [N E D] (probably :P)
+    wind_inertial = [5.0,0.0,0.0] # [N E D] (probably :P)
 # run sim
     println("starting deterministic simulation...");
     time_interval = [0.0,500.0]
@@ -27,6 +27,8 @@
     #PlotSimulation(time_values, trajectory_states, control_array , location, save_plots)
     println("done!");
     Q = diagm([1, deg2rad(2), deg2rad(2)]) # [va α β ]
-    result::Vector{WindAngles} =  getNoisyWindAngles(trajectory_states, Q)
+    wind_angles::Vector{WindAngles} =  getNoisyWindAngles(trajectory_states, Q)
+    winds::Vector{Vector{Float64}} = getNoisyWinds(trajectory_states,time_values, Q)
 # show noisy measurement results 
-    plot_wind_angles(result, time_values)
+    plot_wind_angles(wind_angles, time_values)
+    plot_wind_velocities(winds, time_values)
