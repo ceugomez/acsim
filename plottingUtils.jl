@@ -27,7 +27,7 @@ function plot_wind_angles(result::Vector{WindAngles}, time::Vector{Float64})
     wait_for_key("press any key to continue")
 end
 
-function plot_wind_velocities(W::Vector{Vector{Float64}}, t::Vector{Float64})
+function plot_wind_velocities(W::Vector{Vector{Float64}}, t::Vector{Float64})#, ww::Vector{Float64})
     if length(W) != length(t)
         throw(ArgumentError("The length of `W` and `t` must be the same."))
     end
