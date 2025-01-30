@@ -86,6 +86,15 @@ function plot_vertical_wind_difference(ww::Vector{Float64}, W::Vector{Vector{Flo
     display(p)
     wait_for_key("press any key to continue")
 end
-
+function plot_total_energy(TE::Vector{Float64}, t::Vector{Float64})
+    # Create the plot
+    p = plot(
+        size = (800, 900),            # Specify window size
+        title = "Total Energy, Inertial Frame, Over Time"
+    )
+    plot!(t, TE, label="Total Energy", color=:blue, lw=2, xlabel="Time (s)", ylabel="Total Energy (J)", subplot=1)
+    display(p)
+    wait_for_key("press any key to continue")
+end
 # wait for key fn
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)

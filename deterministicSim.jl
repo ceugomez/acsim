@@ -21,20 +21,22 @@
     wind_inertial = [0.0,0.0,1.0] # [N E D] (probably :P)
 # run sim
     println("starting deterministic simulation...");
-    time_interval = [0.0,50.0]
+    time_interval = [0.0,500.0]
     time_values = [i for i in 0:time_interval[2]]
     extra_params = [control_input, wind_inertial, aircraft_parameters]
     trajectory_states = simulate(aircraft_dynamics!, initial_state, time_interval, extra_params);
     control_array = [AircraftControl(control_input...) for i in 1:length(trajectory_states)];
     PlotSimulation(time_values, trajectory_states, control_array , location, save_plots)
 # Get measurements and plot
-    Q_probe =  diagm([0.0,0.0,0.0])             # diagm([0.1^2, deg2rad(2)^2,deg2rad(2)^2])
-    Q_gps = diagm([0.0,0.0,0.0,0.0,0.0,0.0])    # diagm([0.1^2,0.1^2,0.1^2,0.1^2,0.1^2,0.1^2])
-    Q_eangs = diagm([0.0,0.0,0.0])              # diagm([deg2rad(0.05)^2,deg2rad(0.05)^2,deg2rad(0.005)^2])
+    Q_probe =  diagm([0.1^2, deg2rad(2)^2,deg2rad(2)^2])
+    Q_gps = diagm([0.1^2,0.1^2,0.1^2,0.1^2,0.1^2,0.1^2])
+    Q_eangs = diagm([deg2rad(0.05)^2,deg2rad(0.05)^2,deg2rad(0.005)^2])
     #plot_wind_angles(getProbe(trajectory_states, wind_inertial, Q_probe), time_values)
     # perfect wind estimate - wind triangle
     #plot_wind_velocities(getWinds(getProbe(trajectory_states, wind_inertial, Q_probe),getGPS(trajectory_states,Q_gps),getEAngs(trajectory_states,Q_eangs)), time_values)
     ww = getEnergyRateVWind(trajectory_states,control_array,aircraft_parameters,getGPS(trajectory_states,Q_gps),getProbe(trajectory_states, wind_inertial, Q_probe), wind_inertial)
+    #plot_total_energy(TE, time_values)
     plot_vertical_wind_difference(ww, getWinds(getProbe(trajectory_states, wind_inertial, Q_probe),getGPS(trajectory_states,Q_gps),getEAngs(trajectory_states,Q_eangs)), time_values)
+
     println("done!");
 

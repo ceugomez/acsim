@@ -82,7 +82,8 @@ end
 function getEAngs(x::Vector{AircraftState}, Q::Matrix{Float64})
     eang = Vector{EulerAngles}(undef,length(x))
     for i in 1:length(x)
-        eang[i] = EulerAngles(x[i].ϕ + rand(Normal(0.0,Q[1,1])),x[i].θ + rand(Normal(0.0,Q[2,2])),x[i].ψ + rand(Normal(0.0,Q[3,3])))
+        #eang[i] = EulerAngles(x[i].ϕ + rand(Normal(0.0,Q[1,1])),x[i].θ + rand(Normal(0.0,Q[2,2])),x[i].ψ + rand(Normal(0.0,Q[3,3])))
+        eang[i] = EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ)
     end
     return eang
 end
@@ -102,14 +103,15 @@ end
 # My way of getting vertical wind data
 function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}, param::AircraftParameters, gps::Vector{mGPS}, wa::Vector{WindAngles}, wind::Vector{Float64})
     ww = Vector{Float64}(undef,length(gps))
+    TE = Vector{Float64}(undef,length(gps))
     accel = getAccels(x,c,param, wind, diagm([0.01, 0.01, 0.01]))
+    eang = getEAngs(x, diagm([deg2rad(0.05)^2,deg2rad(0.05)^2,deg2rad(0.005)^2]))
     g = param.g
     
     for i in 1:length(gps)
-        # Get states and transforms
-        eang = EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ)
+        # Get states and transforms        
         vel_inertial = gps[i].vel  # [N,E,D]
-        accel_inertial = TransformFromBodyToInertial([accel[i].ax, accel[i].ay, accel[i].az], eang)
+        accel_inertial = TransformFromBodyToInertial(accel[i], eang[i])
         
         # Get velocities in different frames
         V_body = [x[i].u, x[i].v, x[i].w]  # Body frame velocity
@@ -122,7 +124,7 @@ function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}
         # Get drag force aligned with air-relative velocity
         ρ = stdatmo(-x[i].z)
         aero_force_body, _ = AeroForcesAndMomentsBodyStateWindCoeffs(x[i], c[i], wind, ρ, param)
-        aero_force_i = TransformFromBodyToInertial(aero_force_body, eang)
+        aero_force_i = TransformFromBodyToInertial(aero_force_body, eang[i])
         
         # Project drag along air-relative velocity vector
         drag_direction = normalize(V_air_i)
@@ -137,12 +139,10 @@ function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}
         raw_estimate = (1/g) * (kinematic_term + potential_term + drag_term)
         ww[i] = -raw_estimate
         
-        if i <= 10
-            ww[i] = 0.0
-        end
-        
         # Debug output
         println("Step $i:")
+        println("  Flight path angle (deg): $(rad2deg(asin(vel_inertial[3]/norm(vel_inertial))))")
+        println("  Total energy: $(0.5*norm(vel_inertial)^2 - g*x[i].z)")
         println("  V_inertial: $(vel_inertial)")
         println("  V_air_i: $(V_air_i)")
         println("  Wind: $(wind)")
@@ -150,6 +150,8 @@ function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}
         println("  Raw potential: $(potential_term/g)")
         println("  Raw drag: $(drag_term/g)")
         println("  Net estimate: $(ww[i])")
+        
     end
+    ww[1]=0.0
     return ww
 end
