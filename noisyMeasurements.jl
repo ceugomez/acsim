@@ -24,8 +24,8 @@ end
 function getGPS(x::Vector{AircraftState},Q::Matrix{Float64})
     gps = Vector{mGPS}(undef,length(x))
     for i in 1:length(x)
-        pos = x[i][1:3] + rand(MvNormal(zeros(3), Q[1:3,1:3]))                                                          
-        vel = TransformFromBodyToInertial(x[i][7:9], EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ)) + rand(MvNormal(zeros(3), Q[4:6,4:6]))
+        pos = x[i][1:3] #+ rand(MvNormal(zeros(3), Q[1:3,1:3]))                                                          
+        vel = TransformFromBodyToInertial(x[i][7:9], EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ)) #+ rand(MvNormal(zeros(3), Q[4:6,4:6]))
         gps[i] = mGPS(pos,vel)
     end
     return gps
@@ -41,9 +41,9 @@ function getProbe(x::Vector{AircraftState}, wind::Vector{Float64}, Q::Matrix{Flo
         Vairrel = Vinertial - wind                                                              # air-relative in inertial
         VairrelBody = TransformFromInertialToBody(Vairrel, EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ))   # air-relative in body
         u, v, w = VairrelBody                                                                   # wind angles
-        Va = norm(VairrelBody) + rand(Normal(0.0,Q[1,1]))                                      # airspeed, additive gaussion zero-mean noise (questionable assumption)
-        β = asin(v/Va) + rand(Normal(0.0,Q[2,2]))                                              # sideslip
-        α = atan(w/u) + rand(Normal(0.0,Q[3,3]))                                               # angle of attack                                       
+        Va = norm(VairrelBody) #+ rand(Normal(0.0,Q[1,1]))                                      # airspeed, additive gaussion zero-mean noise (questionable assumption)
+        β = asin(v/Va) #+ rand(Normal(0.0,Q[2,2]))                                              # sideslip
+        α = atan(w/u) #+ rand(Normal(0.0,Q[3,3]))                                               # angle of attack                                       
         probe[i] = WindAngles(Va,β,α)
     end
     return probe
@@ -55,7 +55,7 @@ end
 function getGyros(x::Vector{AircraftState}, Q::Matrix{Float64})
     gyro = Vector{mGyro}(undef,length(x))
     for i in 1:length(x)
-        rates = x[i][10:12] + rand(MvNormal(0.0,Q))
+        rates = x[i][10:12] #+ rand(MvNormal(0.0,Q))
         gyro[i] = mGyro(rates[1],rates[2],rates[3])
     end
     return gyro
@@ -101,16 +101,55 @@ end
 
 # My way of getting vertical wind data
 function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}, param::AircraftParameters, gps::Vector{mGPS}, wa::Vector{WindAngles}, wind::Vector{Float64})
-    ww  = Vector{Float64}(undef,length(gps))    # vertical wind estimate
-    accel_body = getAccels(x,c,param, wind, diagm([0.01, 0.01, 0.01]));
-    eang = getEAngs(x, diagm([0.01, 0.01, 0.01]))
+    ww = Vector{Float64}(undef,length(gps))
+    accel = getAccels(x,c,param, wind, diagm([0.01, 0.01, 0.01]))
     g = param.g
+    
     for i in 1:length(gps)
+        # Get states and transforms
+        eang = EulerAngles(x[i].ϕ,x[i].θ,x[i].ψ)
+        vel_inertial = gps[i].vel  # [N,E,D]
+        accel_inertial = TransformFromBodyToInertial([accel[i].ax, accel[i].ay, accel[i].az], eang)
+        
+        # Get velocities in different frames
+        V_body = [x[i].u, x[i].v, x[i].w]  # Body frame velocity
+        V_wind_i = wind  # Wind in inertial frame [N,E,D]
+        
+        # Calculate air-relative velocity in inertial frame
+        V_air_i = vel_inertial - V_wind_i  # Air-relative in inertial frame
+        Va = wa[i].Va  # True airspeed magnitude
+        
+        # Get drag force aligned with air-relative velocity
         ρ = stdatmo(-x[i].z)
-        aero_force, aero_moments = AeroForcesAndMomentsBodyStateWindCoeffs(x[i], c[i], wind, ρ, param)
-        Fd = TransformFromBodyToInertial(aero_force, eang[i])[1]                                              # not sure this is accurate - might need to normalize by angle of attack? check
-        acc = TransformFromBodyToInertial(accel_body[i], eang[i])
-        ww[i] = (1/g)*(norm(gps[i].vel)*norm(acc)+g*gps[i].vel[3] + Fd/param.m*wa[i].Va)
+        aero_force_body, _ = AeroForcesAndMomentsBodyStateWindCoeffs(x[i], c[i], wind, ρ, param)
+        aero_force_i = TransformFromBodyToInertial(aero_force_body, eang)
+        
+        # Project drag along air-relative velocity vector
+        drag_direction = normalize(V_air_i)
+        Fd = -dot(aero_force_i, drag_direction)
+        
+        # Energy rate terms 
+        kinematic_term = norm(vel_inertial) * norm(accel_inertial)
+        potential_term = g * -vel_inertial[3]  # Using D component (positive down)
+        drag_term = (Fd/param.m) * Va
+        
+        # Vertical wind calculation (note: wind[3] is positive down)
+        raw_estimate = (1/g) * (kinematic_term + potential_term + drag_term)
+        ww[i] = -raw_estimate
+        
+        if i <= 10
+            ww[i] = 0.0
+        end
+        
+        # Debug output
+        println("Step $i:")
+        println("  V_inertial: $(vel_inertial)")
+        println("  V_air_i: $(V_air_i)")
+        println("  Wind: $(wind)")
+        println("  Raw kinematic: $(kinematic_term/g)")
+        println("  Raw potential: $(potential_term/g)")
+        println("  Raw drag: $(drag_term/g)")
+        println("  Net estimate: $(ww[i])")
     end
     return ww
 end
