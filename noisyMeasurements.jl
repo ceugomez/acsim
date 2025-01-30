@@ -12,7 +12,7 @@ struct mGyro
     q::Float64
     r::Float64
 end
-struct mAccel
+struct mAccel <: FieldVector{3,Float64}
     ax::Float64
     ay::Float64
     az::Float64
@@ -48,6 +48,7 @@ function getProbe(x::Vector{AircraftState}, wind::Vector{Float64}, Q::Matrix{Flo
     end
     return probe
 end
+
 # gets simulated gyro measurements from deterministic aircraft state vector
 # Q is 3x3 matrix of noise covariances present in the direct measurements
 # Q = diagm([σ_p^2, σ_q^2, σ_r^2])
@@ -59,6 +60,25 @@ function getGyros(x::Vector{AircraftState}, Q::Matrix{Float64})
     end
     return gyro
 end
+
+# gets simulated accelerometer measurements from deterministic aircraft state vector
+# Q is 3x3 matrix of noise covariances present in the direct measurements
+# Q = diagm([σ_ax^2, σ_ay^2, σ_az^2])
+function getAccels(x::Vector{AircraftState},c::Vector{AircraftControl}, param::AircraftParameters,wind::Vector{Float64}, Q::Matrix{Float64})
+    accel = Vector{mAccel}(undef,length(x))
+    for i in 1:length(x)
+        # determine forces for acceleration
+        ρ = stdatmo(-x[i].z)
+        forces,moments = AircraftForcesAndMoments(x[i],c[i],wind,ρ,param)
+        acc = forces/param.m # could use noise implementation
+        accel[i] = mAccel(acc[1],acc[2],acc[3]) # struct it! woo
+    end
+    return accel
+end
+
+# gets simulated euler angle measurements - this is techincally a derivative of the aircraft EKF, so approximating it this way is definitely wrong
+# Q is 3x3 matrix of noise covariances present in the direct measurements, additive gaussian zero-mean noise (wrong!)
+# Q = diagm([σ_ϕ^2, σ_θ^2, σ_ψ^2])
 function getEAngs(x::Vector{AircraftState}, Q::Matrix{Float64})
     eang = Vector{EulerAngles}(undef,length(x))
     for i in 1:length(x)
@@ -67,12 +87,11 @@ function getEAngs(x::Vector{AircraftState}, Q::Matrix{Float64})
     return eang
 end
 
-
 # gets winds from simulated measurement using wind triangle relation
 # uncertainties are defined in inputs and not considered here
 function getWinds(windAngles::Vector{WindAngles}, GPS::Vector{mGPS}, eang::Vector{EulerAngles})
     W = Vector{Vector{Float64}}(undef, length(windAngles))
-    for i in 1:length(GPS)
+    for i in 1:length(GPS)                             # get acceleration
         VbW = WindAnglesToAirRelativeVelocityVector(windAngles[i])                    # air-relative velocity in body coordinates
         Vairrel = TransformFromBodyToInertial(VbW, eang[i])                           # transform to inertial frame !!!(THIS NEEDS UNCERTAINTIES)
         W[i] = GPS[i].vel - Vairrel                                                   # get winds from triangle relation
@@ -80,14 +99,18 @@ function getWinds(windAngles::Vector{WindAngles}, GPS::Vector{mGPS}, eang::Vecto
     return W
 end
 
-
-function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}, param::AircraftParameters, gps::Vector{mGPS}, wa::Vector{WindAngles})
+# My way of getting vertical wind data
+function getEnergyRateVWind(x::Vector{AircraftState}, c::Vector{AircraftControl}, param::AircraftParameters, gps::Vector{mGPS}, wa::Vector{WindAngles}, wind::Vector{Float64})
     ww  = Vector{Float64}(undef,length(gps))    # vertical wind estimate
+    accel_body = getAccels(x,c,param, wind, diagm([0.01, 0.01, 0.01]));
+    eang = getEAngs(x, diagm([0.01, 0.01, 0.01]))
     g = param.g
     for i in 1:length(gps)
-        aero_force, aero_moments = AeroForcesAndMomentsBodyStateWindCoeffs(x, c, wind, density, param)
-        Fd = aero_force[1]
-        ww[i] = (1/g)*(norm(gps[i].vel)*norm(accel)+g*gps[i].vel[3] + Fd/m*Va) 
+        ρ = stdatmo(-x[i].z)
+        aero_force, aero_moments = AeroForcesAndMomentsBodyStateWindCoeffs(x[i], c[i], wind, ρ, param)
+        Fd = TransformFromBodyToInertial(aero_force, eang[i])[1]                                              # not sure this is accurate - might need to normalize by angle of attack? check
+        acc = TransformFromBodyToInertial(accel_body[i], eang[i])
+        ww[i] = (1/g)*(norm(gps[i].vel)*norm(acc)+g*gps[i].vel[3] + Fd/param.m*wa[i].Va)
     end
     return ww
 end

@@ -16,7 +16,7 @@
 % If using this data for published work please reference:
 %
 % Jason Roadman, Jack Elston, Brian Argrow, and Eric W. Frew. 
-%   "Mission Performance of the Tempest UAS in Supercell Storms".” 
+%   "Mission Performance of the Tempest UAS in Supercell Storms".ï¿½ 
 %   AIAA Journal of Aircraft, 2012.
 %
 %

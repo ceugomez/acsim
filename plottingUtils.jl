@@ -56,5 +56,36 @@ function plot_wind_velocities(W::Vector{Vector{Float64}}, t::Vector{Float64})#, 
     wait_for_key("press any key to continue")
 end
 
+function plot_vertical_wind_difference(ww::Vector{Float64}, W::Vector{Vector{Float64}}, t::Vector{Float64})
+    if length(ww) != length(t) || length(W) != length(t)
+        throw(ArgumentError("The length of `ww`, `W`, and `t` must be the same."))
+    end
+
+    # Extract the Z-component (vertical wind) from W
+    Wz = [w[3] for w in W]
+    
+    # Compute the difference
+    diff_wind = ww .- Wz
+
+    # Create the plot
+    p = plot(
+        layout = @layout([a; b; c]),  # Three vertically stacked subplots
+        size = (800, 900),            # Specify window size
+        title = "Vertical Wind Estimation Comparison"
+    )
+
+    # Plot first estimation method
+    plot!(t, ww, label="Energy Rate Method", color=:blue, lw=2, xlabel="Time (s)", ylabel="Vertical Wind (m/s)", subplot=1)
+
+    # Plot second estimation method
+    plot!(t, Wz, label="Wind Triangle Method", color=:red, lw=2, xlabel="Time (s)", ylabel="Vertical Wind (m/s)", subplot=2)
+
+    # Plot the difference
+    plot!(t, diff_wind, label="Difference (Energy - Wind Triangle)", color=:green, lw=2, xlabel="Time (s)", ylabel="Difference (m/s)", subplot=3)
+
+    display(p)
+    wait_for_key("press any key to continue")
+end
+
 # wait for key fn
 wait_for_key(prompt) = (print(stdout, prompt); read(stdin, 1); nothing)
