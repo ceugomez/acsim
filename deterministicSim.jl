@@ -10,13 +10,14 @@
     aircraft_parameters = AircraftParameters(filename)
     location = "./temp/"
     save_plots = false
+# winds 
+    wind_inertial = [5.0,5.0,5.0] # [N E D] (probably :P)
 # trim @ va
-    trim_definition = TrimDefinitionSL(18.0,0.0,1655)
+    trim_definition = TrimDefinitionSL(18.0+wind_inertial[1],0.0,1655)
     state, control, results = GetTrimConditions(trim_definition, aircraft_parameters)
     initial_state = collect(values(state))
     control_input = collect(values(control))
-# winds 
-    wind_inertial = [5.0,0.0,0.0] # [N E D] (probably :P)
+
 # run sim
     println("starting deterministic simulation...");
     time_interval = [0.0,500.0]

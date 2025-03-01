@@ -38,3 +38,12 @@ function getNoisyWinds(x::Array{AircraftState}, t::Vector{Float64},Q::Matrix{Flo
 end
 
  
+function getNoisyGPS(x::Array{AircraftState}, Q::Matrix{Float64}) #sketch 
+    pos = Vector{Vector{Float64}}() # gps inertial pos
+    vel = Vector{Vector{Float64}}() # gps inertial vel
+    for i in 1:(length(x)-1)
+        push!(pos, x[i].x + randn()*Q[1,1]*0.33, x[i].y + randn()*Q[2,2]*0.33, x[i].z + randn()*Q[3,3]*0.33);   # get position direct, + noise
+        push!(vel, (x[i].x-x[i+1].x) + randn()*0.33, x[i].v + randn()*Q[5,5]*0.33, x[i].w + randn()*Q[6,6]*0.33);   # get velocity direct, + noise
+    end
+    return vec;
+end
