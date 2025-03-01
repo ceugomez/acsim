@@ -1,0 +1,3 @@
+[submodule "DMDc"]
+	path = DMDc
+	url = git@github.com:ceugomez/DMDc.git
