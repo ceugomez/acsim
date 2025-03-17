@@ -6,7 +6,6 @@ include("plottingUtils.jl")
 function doubletSim()
 # generate time series of deterministic aircraft dynamics, return state and control time histories
 # cgf cego6160 
-# doesn't actually do a doublet 
 #use ttwistor because it's there 
     filename = "./src/ttwistor.mat"
     aircraft_parameters = AircraftParameters(filename)
@@ -22,12 +21,16 @@ function doubletSim()
     control_input = collect(values(control))
 # run sim
     println("starting deterministic simulation...");
-    time_interval = [0.0,10.0]
+    time_interval = [0.0,5.0]
     time_values = [i for i in 0:time_interval[2]]
     extra_params = [control_input, wind_inertial, aircraft_parameters]
     trajectory_states = simulate(aircraft_dynamics!, initial_state, time_interval, extra_params);
-    control_array = [AircraftControl(control_input...) for i in 1:length(trajectory_states)];
-    #control_array = control_array.*cos(LinRange(0,2*pi,length(control_array))); # make control array a cosine wave
+    # make doublet control input
+        control_array = [AircraftControl(control_input...) for i in 1:length(trajectory_states)];
+        scaling_factor = LinRange(0, 2*pi, length(control_array))
+        for (i, control) in enumerate(control_array)
+            control[1] *= 1*cos(scaling_factor[i]); # aileron perturbation
+        end
     println("finished deterministic simulation");
     return [trajectory_states, control_array]
     # could get measurements here, but will leave this for later
